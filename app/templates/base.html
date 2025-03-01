@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    {% if title %}
+        <title>{{ title }}</title>
+    {% else %}
+        <title>MyApp</title>
+    {% endif %}
+</head>
+<body>
+    <div>
+        MyApp: <a href="{{ url_for('index') }}">Главная страница</a>
+    </div>
+    {% block app_content %} {% endblock %}
+</body>
+</html>

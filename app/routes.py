@@ -1,9 +1,10 @@
 from app import app
-from flask import render_template, flash, url_for, redirect, request
+from flask import render_template, flash, url_for, redirect, request, abort
 from app.forms import LoginForm, RegistrationForm
 from flask_login import current_user, login_user, logout_user, login_required
 from app import db
 from app.models import User
+from datetime import datetime
 
 
 @app.route("/")
@@ -13,10 +14,22 @@ def index():
 
 
 @app.route("/second")
-@login_required
 def second():
-    text = f"Hello, {current_user.username}"
-    return render_template("second.html", text=text)
+    flash('привет', 'danger')
+    return render_template("second.html")
+
+
+@app.route("/lk/<username>")
+def lk(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    return render_template("user.html", user=user)
+
+
+@app.before_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.now()
+        db.session.commit()
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -29,7 +42,7 @@ def register():
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash("Успешная регистрация!")
+        flash("Успешная регистрация!", "success")
         return redirect(url_for('login'))
     return render_template('register.html', form=form, title='Регистрация')
 
@@ -42,13 +55,13 @@ def login():
         if form.submit:
             user = User.query.filter_by(username=form.username.data).first()
             if user is None or not user.check_password(form.password.data):
-                flash('Неправильный логин или пароль!')
+                flash('Неправильный логин или пароль!', "warning")
                 return redirect(url_for('login'))
             login_user(user, remember=form.remember_me.data)
             next_page = request.args.get('next')
             if not next_page:
                 next_page = url_for('index')
-            flash(f'Добро пожаловать {user.username}')
+            flash(f'Добро пожаловать {user.username}', "success")
             return redirect(next_page)
     return render_template('login.html', title="Вход", form=form)
 
@@ -56,5 +69,5 @@ def login():
 @app.route('/logout')
 def logout():
     logout_user()
-    flash("Вы вышли из системы!")
+    flash("Вы вышли из системы!", "info")
     return redirect(url_for('index'))
